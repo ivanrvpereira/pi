@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Devanagari conjunct width calculation so editor repainting no longer wraps into repeated lines.
+
 ## [0.80.10] - 2026-07-16
 
 ## [0.80.9] - 2026-07-16
