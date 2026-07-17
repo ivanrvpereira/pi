@@ -2,10 +2,6 @@
 
 ## [Unreleased]
 
-### Fixed
-
-- Fixed Indic text width calculation (conjunct clusters and spacing vowel signs) so editor repainting no longer wraps into repeated lines.
-
 ## [0.80.10] - 2026-07-16
 
 ## [0.80.9] - 2026-07-16
