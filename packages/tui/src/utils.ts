@@ -36,9 +36,15 @@ function couldBeEmoji(segment: string): boolean {
 	);
 }
 
-// Regexes for character classification (same as string-width library)
-const zeroWidthRegex = /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Mark}|\p{Surrogate})+$/v;
-const leadingNonPrintingRegex = /^[\p{Default_Ignorable_Code_Point}\p{Control}\p{Format}\p{Mark}\p{Surrogate}]+/v;
+// Regexes for character classification (based on the string-width library).
+// Only nonspacing and enclosing marks are zero-width. Spacing marks (Mc, e.g.
+// Devanagari matras) occupy one cell in Kuhn-derived wcwidth terminals
+// (Ghostty, xterm.js); terminals that render them zero-width only make us
+// overestimate, which is safe — underestimating triggers terminal auto-wrap
+// and differential-repaint drift.
+const zeroWidthRegex =
+	/^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Format}|\p{Nonspacing_Mark}|\p{Enclosing_Mark}|\p{Surrogate})+$/v;
+const hangulRegex = /^\p{Script_Extensions=Hangul}$/v;
 const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
 
 // Cache for non-ASCII strings
@@ -179,32 +185,32 @@ function graphemeWidth(segment: string): number {
 		return 2;
 	}
 
-	// Get base visible codepoint
-	const base = segment.replace(leadingNonPrintingRegex, "");
-	const cp = base.codePointAt(0);
-	if (cp === undefined) {
+	let width = 0;
+	let firstCodePoint: number | undefined;
+	let allPrintingCodePointsAreHangul = true;
+	for (const char of segment) {
+		if (zeroWidthRegex.test(char)) continue;
+		const cp = char.codePointAt(0)!;
+		firstCodePoint ??= cp;
+		width += eastAsianWidth(cp);
+		allPrintingCodePointsAreHangul &&= hangulRegex.test(char);
+	}
+
+	if (firstCodePoint === undefined) {
 		return 0;
 	}
 
 	// Regional indicator symbols (U+1F1E6..U+1F1FF) are often rendered as
 	// full-width emoji in terminals, even when isolated during streaming.
 	// Keep width conservative (2) to avoid terminal auto-wrap drift artifacts.
-	if (cp >= 0x1f1e6 && cp <= 0x1f1ff) {
+	if (firstCodePoint >= 0x1f1e6 && firstCodePoint <= 0x1f1ff) {
 		return 2;
 	}
 
-	let width = eastAsianWidth(cp);
-
-	// Trailing halfwidth/fullwidth forms and AM vowels that segment with a base.
-	if (segment.length > 1) {
-		for (const char of segment.slice(1)) {
-			const c = char.codePointAt(0)!;
-			if (c >= 0xff00 && c <= 0xffef) {
-				width += eastAsianWidth(c);
-			} else if (c === 0x0e33 || c === 0x0eb3) {
-				width += 1;
-			}
-		}
+	// Hangul code points compose into one syllable block rather than occupying
+	// their individual East Asian widths.
+	if (allPrintingCodePointsAreHangul) {
+		return eastAsianWidth(firstCodePoint);
 	}
 
 	return width;
