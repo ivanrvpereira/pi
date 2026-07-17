@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Fixed Devanagari conjunct width calculation so editor repainting no longer wraps into repeated lines.
+- Fixed Indic text width calculation (conjunct clusters and spacing vowel signs) so editor repainting no longer wraps into repeated lines.
 
 ## [0.80.10] - 2026-07-16
 

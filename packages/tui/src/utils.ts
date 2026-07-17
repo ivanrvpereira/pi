@@ -36,8 +36,14 @@ function couldBeEmoji(segment: string): boolean {
 	);
 }
 
-// Regexes for character classification (same as string-width library)
-const zeroWidthRegex = /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Format}|\p{Mark}|\p{Surrogate})+$/v;
+// Regexes for character classification (based on the string-width library).
+// Only nonspacing and enclosing marks are zero-width. Spacing marks (Mc, e.g.
+// Devanagari matras) occupy one cell in Kuhn-derived wcwidth terminals
+// (Ghostty, xterm.js); terminals that render them zero-width only make us
+// overestimate, which is safe — underestimating triggers terminal auto-wrap
+// and differential-repaint drift.
+const zeroWidthRegex =
+	/^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Format}|\p{Nonspacing_Mark}|\p{Enclosing_Mark}|\p{Surrogate})+$/v;
 const hangulRegex = /^\p{Script_Extensions=Hangul}$/v;
 const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
 
